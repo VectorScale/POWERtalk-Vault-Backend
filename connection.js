@@ -19,7 +19,7 @@ const db = mysql.createConnection({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: +process.env.DB_PORT,
-  ssl: {ca: fs.readFileSync(path.resolve(__dirname,"../backend/DigiCertGlobalRootCA.crt.pem"))}
+  ssl: {ca: fs.readFileSync(path.resolve(__dirname,"../backend/combined-ca-certificates.pem"))}
 });
 
 db.connect((err) => {
@@ -150,7 +150,7 @@ app.get("/profile/:id", (req, res) => {
 });
 app.post("/profile/edit/", (req, res) => {
   const {
-    userId,
+    profile_id,
     first_name,
     last_name,
     email,
@@ -160,11 +160,9 @@ app.post("/profile/edit/", (req, res) => {
     interests,
     pronouns,
     dob,
-    privacy,
-    marketing,
   } = req.body;
   const editProfileQuery =
-    "UPDATE members SET first_name = ?, last_name = ?, email = ?, phone_number = ?, address = ?, postcode = ?, interests = ?, pronouns = ?, dob = ?, private = ?, want_marketing = ? WHERE user_id = ?";
+    "UPDATE members SET first_name = ?, last_name = ?, email = ?, phone_number = ?, address = ?, postcode = ?, interests = ?, pronouns = ?, dob = ? WHERE user_id = ?";
     db.query(
     editProfileQuery,
     [
@@ -177,9 +175,33 @@ app.post("/profile/edit/", (req, res) => {
       interests,
       pronouns,
       dob,
-      privacy,
-      marketing,
-      userId,
+      profile_id,
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res.status(500).json({ message: "Database Error" });
+      }
+      return res.status(200).json({ message: "Profile Updated Successfully" });
+    }
+  );
+});
+
+//Update the database on what data the user wants to share
+app.post("/profile/share/", (req, res) => {
+  const {
+    profile_id,
+    phone_private,
+    address_private
+  } = req.body;
+  const editProfileQuery =
+    "UPDATE members SET phone_private = ?, address_private = ? WHERE user_id = ?";
+    db.query(
+    editProfileQuery,
+    [
+      phone_private,
+      address_private,
+      profile_id,
     ],
     (err, result) => {
       if (err) {
@@ -239,6 +261,23 @@ app.post("/users/login", (req, res) => {
     } else {
       return res.status(401).json({ message: "Invalid Credentials" });
     }
+  });
+});
+app.get("/member/:id", (req, res) => {
+  const userId = req.params.id;
+  const query = "SELECT * FROM `members` WHERE User_id = ?";
+
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+
+    if (results.length === 0) {
+      return res.status(201).json({ message: "User not found" });
+    }
+
+    res.status(200).json(results[0]);
   });
 });
 app.get("/user/:id", (req, res) => {
@@ -330,15 +369,19 @@ app.get("/club_details/:id", (req, res) => {
 });
 app.get("/clubAccess/:id", (req, res) => {
   const memberId = req.params.id;
-  const query = "SELECT * FROM boardmember WHERE user_id = ?";
+  const query = "SELECT * FROM board_members WHERE user_id = ?";
 
   db.query(query, [memberId], (err, results) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).json({ message: "Internal server error" });
     }
+    
+    if (results.length === 0) {
+      return res.status(202).json({ message: "No Club Access" });
+    }
 
-    res.json(results[0]); // Send only the first (and only) result
+    res.status(200).json(results[0]); // Send only the first (and only) result
   });
 });
 app.get("/clubBoard/:id", (req, res) => {
@@ -439,357 +482,10 @@ app.post("/send-messages", async (req, res) => {
       console.error("Database error:", err);
       return res.status(500).json({ message: "Database Error" });
     }
+
     res.json(result);
   });
-});
-app.get("/project/:id", (req, res) =>{
-  const projectlevel = req.params.id;
-  const query = "SELECT * FROM `development program` WHERE project_level = ?";
-
-  db.query(query, [projectlevel], (err, result) =>{
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-
-    if (result.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-        res.json(result);
-
-  })
-});
-app.get("/projects/:id", (req, res) =>{
-  const projectlevel = req.params.id;
-  const query = "SELECT * FROM `development program` WHERE assignment_id = ?";
-
-  db.query(query, [projectlevel], (err, result) =>{
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-
-    if (result.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-        res.json(result);
-
-  })
-});
-app.get("/projectss/:id/:level", (req, res) =>{
-  const projectlevel = req.params.level;
-  const projectid= req.params.id;
-  const query = "SELECT * FROM `development program` WHERE member_id= ? AND project_level = ?";
-
-  db.query(query, [projectid, projectlevel], (err, result) =>{
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-
-    if (result.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-        res.json(result);
-
-  })
-});
-app.post("/member/make-projects-level-1", async (req, res) => {
-  const projectnames = ["Thoughts for the Day/Inspiration", "Closing Thought", "Issues of the Day", "Self-Introduction Speech\n4-7 minutes", "Oral Reading\n4-7 minutes", "Poetry Reading\n4-7 minutes", "Word Power Education\n10 minutes", "Speach to Inform\n5-8 minutes", "Speech Containing Gestures\n5-8 minutes", "Introduction of a Speaker", "Thanking a Speaker", "Trainee Evaluator", "Self=Evaluation"];
-  const { senderId } = req.body;
-  for (const i=0; i< projectnames.length; i++){
-    if (i == 2 || i == 11){
-      for (const j=0; j<3; j++){
-        const query = "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-        db.query(query, [senderId, i, projectnames[i], 1], (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ message: "Database Error" });
-        }
-        res.json(result);
-      });
-      }
-    }
-    else{
-      const query = "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-        db.query(query, [senderId, i, projectnames[i], 1], (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ message: "Database Error" });
-        }
-        res.json(result);
-      });
-    }
-  }
-});
-app.post("/member/make-projects-level-2", async (req, res) => {
-  const projectnames = ["Issues of the day Leader", "Program Leader", "Speech to Persuade\n5-8 minutes", "Speech to inspire\n5-8 minutes", "Speech to Entertain\n5-8 minutes", "Research Speech\n5-8 minutes", "Current Event Speech\n5-8 minutes", "Speech Using Visual Aids\n5-8 minutes", "Impromptu Speech\n4-7 minutes", "Word Power Education\n20 minutes", "Assignment Evaluator", "General Evaluator\n8-10 minutes", "Committee Member"];
-  const { senderId } = req.body;
-  for (const i=0; i< projectnames.length; i++){
-    if (i == 10){
-      for (const j=0; j<3; j++){
-        const query = "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-        db.query(query, [senderId, i, projectnames[i], 2], (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ message: "Database Error" });
-        }
-        res.json(result);
-      });
-      }
-    }
-    else if (i == 1 || i == 12){
-      for (const j=0; j<2; j++){
-        const query = "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-        db.query(query, [senderId, i, projectnames[i], 2], (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ message: "Database Error" });
-        }
-        res.json(result);
-      });
-      }
-    }
-    else{
-      const query = "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-        db.query(query, [senderId, i, projectnames[i], 2], (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ message: "Database Error" });
-        }
-        res.json(result);
-      });
-    }
-  }
-});
-app.post("/member/make-projects-level-3", async (req, res) => {
-  const projectnames = ["Prepare a Written Report and Present Using a Microphone", "Present an Education Session\n20-30 minutes", "Program a Meeting at any Level", "Moderator or Discussion Leader", "General Evaluator", "Committee Chairman", "Club Elected Officer", "POWERtalk Australia Conference Delegate", "Speech Contest Judge", "Plus any six of the following eight speeches:", "Speech Using a Whiteboard\n8-10 minutes", "Biographical Speech\n8-10 minutes", "Review Assignment 6-9 minutes", "Be in Earnest Speech 5-8 minutes", "TV Talk 6-8 minutes", "Speech to Inspire, Using Technology 5-8 minutes", "Travelogue 7-10 minutes", "	Impromptu Speech 7-8 minutes"];
-  const { senderId } = req.body;
-  for (const i=0; i< projectnames.length; i++){
-    if (i == 1 || i == 2|| i == 4|| i == 5|| i == 6){
-      for (const j=0; j<2; j++){
-        const query = "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-        db.query(query, [senderId, i, projectnames[i], 3], (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ message: "Database Error" });
-        }
-        res.json(result);
-      });
-      }
-    }
-    else{
-      const query = "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-        db.query(query, [senderId, i, projectnames[i], 3], (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ message: "Database Error" });
-        }
-        res.json(result);
-      });
-    }
-  }
-});
-app.post("/member/make-projects-level-3a", async (req, res) => {
-  const projectnames = ["Art Exhibition Review (Time 6-9 minutes)", "	Concert Review (Time 6-9 minutes)", "Film Review (Time 6-9 minutes)", "Play/Theatre Review (Time 6-9 minutes)", "Book Review (Time 6-9 minutes)", "Book Report (Time 3-5 minutes)", "Impact Speech (Time 5-8 minutes)", "	Special Occasion Speech (Time as programmed)", "Speech contest speech (Time 5-8 minutes)", "Extemporaneous Speech (Time 5-7 minutes)", "Moderator of a Dialogue Evaluation (Time 20-30 minutes)", "Assignment using a microphone (Time as programmed)", "Assignment using a microphone.", "Be in Earnest Speech 5-8 minutes", "TV Talk 6-8 minutes", "Speech to Inspire, Using Technology 5-8 minutes", "Travelogue 7-10 minutes", "	Impromptu Speech 7-8 minutes"];
-  const { senderId } = req.body;
-  for (const i=0; i< projectnames.length; i++){
-    
-    const query = "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-      db.query(query, [senderId, i, projectnames[i], 3.1], (err, result) => {
-      if (err) {
-        console.error("Database error:", err);
-        return res.status(500).json({ message: "Database Error" });
-      }
-      res.json(result);
-    });
-    
-  }
-});
-app.post("/member/make-projects-level-4", async (req, res) => {
-  const projectnames = ["Prepare and present an education session at any level", "Prepare and present an education session at any level", "Present at any level an education session developed by someone else", "Interpretive Reading", "Delivering a Presentation with PowerPoint", "Research Speech\n5-8 minutes", "Current Event Speech\n5-8 minutes", "Speech Using Visual Aids\n5-8 minutes", "Impromptu Speech\n4-7 minutes", "Word Power Education\n20 minutes", "Assignment Evaluator", "General Evaluator\n8-10 minutes", "Committee Member"];
-  const { senderId } = req.body;
-  for (const i=0; i< projectnames.length; i++){
-    if (i == 10){
-      for (const j=0; j<3; j++){
-        const query = "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-        db.query(query, [senderId, i, projectnames[i], 4], (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ message: "Database Error" });
-        }
-        res.json(result);
-      });
-      }
-    }
-    else if (i == 1 || i == 12){
-      for (const j=0; j<2; j++){
-        const query = "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-        db.query(query, [senderId, i, projectnames[i], 4], (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ message: "Database Error" });
-        }
-        res.json(result);
-      });
-      }
-    }
-    else{
-      const query = "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-        db.query(query, [senderId, i, projectnames[i], 4], (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ message: "Database Error" });
-        }
-        res.json(result);
-      });
-    }
-  }
-});
-app.get("/clubfromname/:name", async (req, res) => {
-  const club_name = req.params.name;
-
-  const query = "SELECT Club_id FROM club WHERE club_name = ?"
-    db.query(query, [club_name], (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ message: "Database Error" });
-        }
-        console.log(result)
-        res.json(result);
-      });
-});
-app.post("/request-project", async (req, res) => {
-
-  const {club_id, project_no} = req.body;
-  const query = "INSERT INTO `program_requests` (project_id, club_id) VALUES (?, ?)"
-  db.query(query, [project_no, club_id], (err, result) => {
-  console.log(club_id)
-  console.log(project_no);
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ message: "Database Error" });
-    }
-      return res.status(200).json({ message: "New Request Successful" });
-  });
-});
-app.post("/autofill-meetings", async (req, res) => {
-    let nextDates = [];
-    const club_data = await get_clubdates();
-    console.log(club_data);
-    for (var i = 0; i < club_data.length; i++){
-      club = club_data[i];
-      console.log(club)
-      const arr = club.interval.split(",");
-      const days = arr.flatMap((el) =>{
-        if(typeof el == "string"){ //converts string to int
-            return el.split(",").map((n)=> (+n - 1)); //-1 to align with dayjs counting 0 as 1st
-        }
-        return el;
-      })
-      
-      const cal = dayjs.recur().every(club.club_day).daysOfWeek().every(days).weeksOfMonthByDay();
-      const firstDayOfMonth = dayjs().startOf("month")
-      cal.fromDate(firstDayOfMonth);
-      nextmeetings = cal.next(days.length);
-      for (var j = 0; j < days.length; j++){
-        nextDates.push(nextmeetings[j].toDate());
-        const meet_name = `${club.Club_name} Meeting ${j+1}`
-        set_meetings(club.Club_id, meet_name, nextmeetings[j].toDate(), club.club_time, "placeholder");
-      }
-      
-      console.log(nextDates)
-      const club_memb = await members_in_clubs(club.Club_id);
-  
-      console.log(club_memb)
-      for (var j = 0; j < club_memb.length; j++){
-        mem = club_memb[j];
-        for (var k = 0; k < days.length; k++){
-          console.log(nextmeetings[k].toDate())
-          const alligned_meeting = await get_meetingids(club.Club_id, nextmeetings[k].toDate());
-          console.log(alligned_meeting);
-          assign_all_to_meetings(mem.User_id, alligned_meeting[0].meeting_id);
-        }
-      }
-    }
 });
 app.listen(+process.env.PORT, "0.0.0.0", () => {
   console.log(`Server running on port ` + process.env.PORT);
 });
-
-
-function get_clubdates(){
-  return new Promise((resolve, reject) => {
-    db.query('SELECT Club_id, Club_name, club_day, `interval`, club_time  FROM `club`', (err, results, fields) => {
-      if(!err){
-        resolve(results);
-      }
-      else{
-        reject(err)
-      }
-    })
-  })
-}
-
-function set_meetings(clubid, meetingname, meetingdate, meetingtime, meetingplace){ //CHANGE IN INDEX.js
-  return new Promise((resolve, reject) => {
-    query = "INSERT INTO `meeting` (club_id, meeting_name, meeting_date, meeting_time, meeting_place) VALUES (?, ?, ?, ?, ?)"
-    db.query(query, [clubid, meetingname, meetingdate, meetingtime, meetingplace], (err, results, fields) => {
-      if(!err){
-        //console.log(results);
-        resolve(results);
-      }
-      else{
-        reject(err);
-      }
-    })
-  })
-}
-
-function members_in_clubs(clubid){ //CHANGE IN INDEX.js
-  return new Promise((resolve, reject) => {
-    query = "SELECT User_id FROM `member's club` WHERE Club_id = ?"
-    db.query(query, [clubid], (err, results, fields) => {
-      if(!err){
-        //console.log(results);
-        resolve(results);
-      }
-      else{
-        reject(err);
-      }
-    })
-  })
-}
-
-function get_meetingids(clubid, meetingdate){ //CHANGE IN INDEX.js
-  return new Promise((resolve, reject) => {
-    const formattedDate = meetingdate.toISOString().split('T')[0]
-    query = "SELECT meeting_id FROM meeting WHERE club_id = ? and meeting_date = ?"
-    db.query(query, [clubid, formattedDate], (err, results, fields) => {
-      if(!err){
-        //console.log(`${results} + ${clubid} + ${meetingdate}`);
-        resolve(results);
-      }
-      else{
-        reject(err);
-      }
-    })
-  })
-}
-
-function assign_all_to_meetings(user, meetingid){ //CHANGE IN INDEX.js
-  return new Promise((resolve, reject) => {
-    query = "INSERT INTO meeting_attendance (user_id, meeting_id) VALUES (?, ?)"
-    db.query(query, [user, meetingid], (err, results, fields) => {
-      if(!err){
-        console.log(results);
-        resolve(results);
-      }
-      else{
-        reject(err);
-      }
-    })
-  })
-}
-
-module.exports = app;
