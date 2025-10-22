@@ -13,15 +13,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const db = mysql.createConnection({
+const db = mysql.createPool({
   host: process.env.DB_SERVER,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: +process.env.DB_PORT,
   ssl: {ca: fs.readFileSync(path.resolve(__dirname,"./ssl/combined-ca-certificates.pem"))},
+  connectionLimit: 85,
+  idleTimeout: 60000, // Add this for better timeout handling
+  maxIdle: 5,
+  waitForConnections: true
 });
 
+/*
 db.connect((err) => {
   if (err) {
     console.error("Database connection failed: " + err.stack);
@@ -41,8 +46,8 @@ db.connect((err) => {
       }
       console.log('Done.');
     }
-  }); */
-});
+  }); 
+});*/
 
 //Board Member Access
 app.get("/boardMemberAccess/:id", async (req, res) => {
