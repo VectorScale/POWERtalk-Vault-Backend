@@ -106,7 +106,7 @@ router.get("/clubBoard/:id", (req, res) => {
     }
 
     if (results.length === 0) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(201).json({ message: "User not found" });
     }
 
     res.json(results);
@@ -136,28 +136,7 @@ router.get("/notInClub/:id", (req, res) => {
   });
 });
 
-/**
- * Get member details by user ID
- * URL Parameter: id 
- * @param {int} id The user ID to retrieve details for
- */
-router.get("/clubBoardMembers/:id", (req, res) => {
-  const UserId = req.params.id;
-  const query = "SELECT * FROM members WHERE user_id = ?";
 
-  db.query(query, [UserId], (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-
-    if (results.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.json(results);
-  });
-});
 /**
  * Get club by club name
  * URL Parameter: clubName 

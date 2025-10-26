@@ -44,12 +44,31 @@ function requireRole(role) {
     const token = authHeader && authHeader.split(' ')[1]; 
     const { access } = jwt.verify(token, process.env.JWT_SECRET);
     //console.log(access);
-    if (!req.headers['authorization'] || access != role) {
-      return res.status(403).json({ 
-        error: 'Insufficient permissions',
-        required: role
-      });
+    if(role == 'club'){
+      if (!req.headers['authorization'] || (access != role && access != 'council' && access != 'association')) {
+        return res.status(403).json({ 
+          error: 'Insufficient permissions',
+          required: role
+        });
+      }
     }
+    else if(role == 'council'){
+      if (!req.headers['authorization'] || (access != role && access != 'association')) {
+        return res.status(403).json({ 
+          error: 'Insufficient permissions',
+          required: role
+        });
+      }
+    }
+    else if(role == 'association'){
+      if (!req.headers['authorization'] || access != role) {
+        return res.status(403).json({ 
+          error: 'Insufficient permissions',
+          required: role
+        });
+      }
+    }
+    
     next();
   };
 }

@@ -21,6 +21,8 @@ router.get("/boardMemberAccess/:id", async (req, res) => {
     res.json(result[0]);
   });
 });
+
+
 /**
  * Get board member information by user ID
  * URL Parameter: id 
@@ -52,8 +54,12 @@ router.get("/association/boardMembers/:access", (req, res) => {
   const access = req.params.access;
   const levels = ['club','council','association'];
 
-  const query = `SELECT user_id FROM board_members WHERE level_of_access IN ('${levels.slice(access-1).join("','")}')`;
-  
+  var query = "";
+  if (access == 0){
+    query = `SELECT user_id, club_id FROM board_members`;
+  } else {
+    query = `SELECT user_id, club_id FROM board_members WHERE level_of_access = '${levels[access]}'`;
+  }
   db.query(query, (err, results) => {
     res.json(results);
   });
@@ -141,6 +147,29 @@ const {user_id, position, start, end} = req.body;
       return res.status(500).json({ message: "Database Error" });
     }
     return res.status(200).json({ message: "New Member Added Successfully" });
+  });
+});
+/**
+ * Get member details by user ID
+ * URL Parameter: id 
+ * @param {int} id The user ID to retrieve details for
+ */
+router.get("/clubBoardMembers/:id", (req, res) => {
+  const UserId = req.params.id;
+  const query = "SELECT * FROM members WHERE user_id = ?";
+
+  db.query(query, [UserId], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+
+    if (results.length === 0) {
+      console.log("Tesst");
+      return res.status(201).json({ message: "User not found" });
+    }
+
+    res.json(results);
   });
 });
 module.exports = router;

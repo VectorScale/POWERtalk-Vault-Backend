@@ -133,7 +133,7 @@ router.post("/member/projects/1", async (req, res) => {
     // Execute all inserts in parallel
     const results = await Promise.all(insertPromises);
     
-    console.log("All projects inserted successfully");
+    console.log("All lv1 projects inserted successfully");
     res.json({ 
       message: "All projects inserted successfully", 
       totalProjects: projectnames.length,
@@ -191,7 +191,7 @@ router.post("/member/projects/2", async (req, res) => {
     // Execute all inserts in parallel
     const results = await Promise.all(insertPromises);
     
-    console.log("All projects inserted successfully");
+    console.log("All lv2 projects inserted successfully");
     res.json({ 
       message: "All projects inserted successfully", 
       totalProjects: projectnames.length,
@@ -233,26 +233,27 @@ router.post("/member/projects/3", async (req, res) => {
   const { user_id } = req.body;
   try{
       for (let i = 0; i < projectnames.length; i++) {
-    if (i == 1 || i == 2 || i == 4 || i == 5 || i == 6) {
-      for (let j = 0; j < 2; j++) {
+      if (i == 1 || i == 2 || i == 4 || i == 5 || i == 6) {
+        for (let j = 0; j < 2; j++) {
+          const query =
+            "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
+          insertPromises.push(db.promise().query(query, [user_id, i, projectnames[i], 3]));
+        }
+      } else {
         const query =
           "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
         insertPromises.push(db.promise().query(query, [user_id, i, projectnames[i], 3]));
       }
-    } else {
-      const query =
-        "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-      insertPromises.push(db.promise().query(query, [user_id, i, projectnames[i], 3]));
-    }
+      
+    } 
     const results = await Promise.all(insertPromises);
-    
-    console.log("All projects inserted successfully");
-    res.json({ 
-      message: "All projects inserted successfully", 
-      totalProjects: projectnames.length,
-      totalInserts: insertPromises.length 
-    });
-  }
+      
+      console.log("All lv3 projects inserted successfully");
+      res.json({ 
+        message: "All projects inserted successfully", 
+        totalProjects: projectnames.length,
+        totalInserts: insertPromises.length 
+      });
   } catch(err){
     console.error("Database error:", err);
     return res.status(500).json({ message: "Database Error" });
@@ -290,7 +291,7 @@ router.post("/member/projects/3a", async (req, res) => {
     }
     const results = await Promise.all(insertPromises);
     
-    console.log("All projects inserted successfully");
+    console.log("All lv3a projects inserted successfully");
     res.json({ 
       message: "All projects inserted successfully", 
       totalProjects: projectnames.length,
@@ -326,43 +327,39 @@ router.post("/member/projects/4", async (req, res) => {
   ];
   const insertPromises = [];
   const { user_id } = req.body;
-  for (let i = 0; i < projectnames.length; i++) {
-    if (i == 0 || i == 3|| i == 10) {
-      for (let j = 0; j < 3; j++) {
-        const query =
-          "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-        db.query(query, [senderId, i, projectnames[i], 4], (err, result) => {
-          if (err) {
-            console.error("Database error:", err);
-            return res.status(500).json({ message: "Database Error" });
-          }
-          res.json(result);
-        });
-      }
-    } else if (i == 1 || i == 2 || i == 9) {
-      for (let j = 0; j < 2; j++) {
-        const query =
-          "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-        db.query(query, [senderId, i, projectnames[i], 4], (err, result) => {
-          if (err) {
-            console.error("Database error:", err);
-            return res.status(500).json({ message: "Database Error" });
-          }
-          res.json(result);
-        });
-      }
-    } else {
-      const query =
-        "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-      db.query(query, [senderId, i, projectnames[i], 4], (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ message: "Database Error" });
+  try{
+    for (let i = 0; i < projectnames.length; i++) {
+      if (i == 0 || i == 3|| i == 10) {
+        for (let j = 0; j < 3; j++) {
+          const query =
+            "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
+          insertPromises.push(db.promise().query(query, [user_id, i, projectnames[i], 4]));
         }
-        res.json(result);
-      });
-    }
+      } else if (i == 1 || i == 2 || i == 9) {
+        for (let j = 0; j < 2; j++) {
+          const query =
+            "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
+          insertPromises.push(db.promise().query(query, [user_id, i, projectnames[i], 4]));
+        }
+      } else {
+        const query =
+          "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
+        insertPromises.push(db.promise().query(query, [user_id, i, projectnames[i], 4]));
+      }
+    } 
+    const results = await Promise.all(insertPromises);
+    
+    console.log("All projects inserted successfully");
+    res.json({ 
+      message: "All lv4 projects inserted successfully", 
+      totalProjects: projectnames.length,
+      totalInserts: insertPromises.length 
+    });
+  }catch(err){
+    console.error("Database error:", err);
+    return res.status(500).json({ message: "Database Error" });
   }
+
 });
 /**
  * Initialize Level 4a projects for a member
@@ -390,44 +387,41 @@ router.post("/member/projects/4a", async (req, res) => {
     "Present a Parliamentary Procedure Workshop\n45-60 minutes",
     "Be a mentor"
   ];
-  const { senderId } = req.body;
-  for (const i = 0; i < projectnames.length; i++) {
-    if (i == 0 || i == 3|| i == 10) {
-      for (const j = 0; j < 3; j++) {
-        const query =
-          "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-        db.query(query, [senderId, i, projectnames[i], 4.1], (err, result) => {
-          if (err) {
-            console.error("Database error:", err);
-            return res.status(500).json({ message: "Database Error" });
-          }
-          res.json(result);
-        });
-      }
-    } else if (i == 1 || i == 2 || i == 9) {
-      for (const j = 0; j < 2; j++) {
-        const query =
-          "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-        db.query(query, [senderId, i, projectnames[i], 4], (err, result) => {
-          if (err) {
-            console.error("Database error:", err);
-            return res.status(500).json({ message: "Database Error" });
-          }
-          res.json(result);
-        });
-      }
-    } else {
-      const query =
-        "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
-      db.query(query, [senderId, i, projectnames[i], 4], (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ message: "Database Error" });
+  const insertPromises = [];
+  const { user_id } = req.body;
+  try{
+    for (let i = 0; i < projectnames.length; i++) {
+      if (i == 0 || i == 3|| i == 10) {
+        for (let j = 0; j < 3; j++) {
+          const query =
+            "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
+          insertPromises.push(db.promise().query(query, [user_id, i, projectnames[i], 4.1]));
         }
-        res.json(result);
-      });
-    }
+      } else if (i == 1 || i == 2 || i == 9) {
+        for (let j = 0; j < 2; j++) {
+          const query =
+            "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
+          insertPromises.push(db.promise().query(query, [user_id, i, projectnames[i], 4.1]));
+        }
+      } else {
+        const query =
+          "INSERT INTO `development_program` (user_id, project_number, project_title, program_level) VALUES (?, ?, ?, ?)";
+        insertPromises.push(db.promise().query(query, [user_id, i, projectnames[i], 4.1]));
+      }
+    } 
+    const results = await Promise.all(insertPromises);
+    
+    console.log("All lv4a projects inserted successfully");
+    res.json({ 
+      message: "All projects inserted successfully", 
+      totalProjects: projectnames.length,
+      totalInserts: insertPromises.length 
+    });
+  }catch (err){
+    console.error("Database error:", err);
+    return res.status(500).json({ message: "Database Error" });
   }
+  
 });
 /**
  * Request a project for a club

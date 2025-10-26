@@ -10,11 +10,12 @@ const { authenticateToken, requireRole, limiter } = require("./config/security")
  
 const userRoutes = require("./routes/users");
 const profileRoutes = require("./routes/profile");
-const boardRoutes = require("./routes/board");
 const projectRoutes = require("./routes/projects");
-const meetingRoutes = require("./routes/meeting");
-const clubRoutes = require("./routes/clubs");
+const boardRoutes = require("./routes/board");
 const councilRoutes = require("./routes/council")
+const clubRoutes = require("./routes/clubs");
+const meetingRoutes = require("./routes/meeting");
+const attendanceRoutes = require("./routes/attendance")
 
 // Initialize dayjs plugins
 dayjs.extend(dayjsRecur);
@@ -31,10 +32,11 @@ app.use(limiter);
 app.use("/", userRoutes);
 app.use("/", profileRoutes);
 app.use("/", projectRoutes);
-app.use("/", meetingRoutes);
 app.use("/", boardRoutes);
-app.use("/", clubRoutes);
 app.use("/", councilRoutes);
+app.use("/", clubRoutes);
+app.use("/", meetingRoutes);
+app.use("/", attendanceRoutes);
 
 app.post("/users/verify-token", authenticateToken, (req, res) => {
   //console.log("ran")
@@ -65,5 +67,7 @@ app.post("/send-messages", async (req, res) => {
 app.listen(+process.env.PORT, "0.0.0.0", () => {
   console.log(`Server running on port ` + process.env.PORT);
 });
+
+//connect()
 
 module.exports = app;

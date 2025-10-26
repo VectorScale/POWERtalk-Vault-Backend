@@ -1,5 +1,7 @@
 const express = require("express");
 const { db } = require("../config/database");
+const { authenticateToken, requireRole, limiter } = require("../config/security");
+const encryptionService = require('../config/encryption')
 
 const router = express.Router();
 
@@ -99,4 +101,29 @@ router.post("/profile/share/", (req, res) => {
     }
   );
 });
+router.get("/profile/login/:id", requireRole('club'), (req, res) => {
+  const profile_id = req.params.id;
+  console.log('s')
+  const passProfileQuery =
+    "SELECT website_login, password FROM member_logins WHERE user_id = ?";
+  db.query(
+    passProfileQuery, [profile_id], (err, result) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res.status(500).json({ message: "Database Error" });
+      }
+      if (result.length > 0) {
+        let user = result[0]
+        if(/^\$/.test(user.password)){
+          user.password = encryptionService.decrypt(user.password)
+        }
+        ;
+        console.log(user)
+
+      res.json(user);
+    }
+    }
+  );
+});
+
 module.exports = router;
