@@ -65,7 +65,7 @@ router.post("/users/login", async (req, res) => {
       if(/^\$/.test(user.password)){
         //If it is hashed then compares to check if its the same to the database password
         const password_decrypt = encryptionService.decrypt(user.password)
-        if (password == password_decrypt) {
+        if (password != password_decrypt) {
           return res.status(201).json({ message: "Invalid Credentials" });
         }
       }
