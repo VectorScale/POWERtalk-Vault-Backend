@@ -104,6 +104,7 @@ router.get("/meeting_details/:id", (req, res) => {
  */
 router.post("/meeting/add/", (req, res) => {
   const {
+    club_id,
     meetingname,
     meetingplace,
     meetingdate,
@@ -113,10 +114,11 @@ router.post("/meeting/add/", (req, res) => {
     instructions,
   } = req.body;
   const editProfileQuery =
-    "Insert into meeting SET meeting_name = ?, meeting_date = ?, meeting_time = ?, arrival_time = ?, meeting_place = ?, agenda_file_link = ?, entry_instructions = ?";
+    "Insert into meeting SET club_id = ?, meeting_name = ?, meeting_date = ?, meeting_time = ?, arrival_time = ?, meeting_place = ?, agenda_file_link = ?, entry_instructions = ?";
   db.query(
     editProfileQuery,
     [
+      club_id,
       meetingname,
       meetingdate,
       meetingstarttime,
