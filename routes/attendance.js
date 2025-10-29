@@ -14,7 +14,7 @@ router.post("/join", (req, res) => {
     return res.status(200).json({ message: "User Joined Successfully" });
   })
 })
-router.delete("/notjoin", (req, res) => {
+router.post("/notjoin", (req, res) => {
    let { user_id, meeting_id }= req.body;
   const query = "DELETE FROM meeting_attendance WHERE user_id = ? AND meeting_id = ?";
   db.query(query, [ user_id , meeting_id] , (err, result) => {
